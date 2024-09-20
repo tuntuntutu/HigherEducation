@@ -45,9 +45,8 @@ const Questions = ({
                        questions
                    }) => {
     const [userAnswers, setUserAnswers] = useState({});
-    const [wrongQuestions, setWrongQuestions] = useState([]);
-    const [pageNo, setPageNo] = useState(0);
-    const questionsPerPage = 10;
+    const [pageNo, setPageNo] = useState(1);
+    const [questionsPerPage, setQuestionsPerPage] = useState(10);
     const totalPages = Math.ceil(questions.length / questionsPerPage);
     const [showErrorModal, setShowErrorModal] = React.useState(false);
 
@@ -56,8 +55,8 @@ const Questions = ({
     }
 
     const currentQuestions = useMemo(() => {
-        return questions.slice(pageNo * questionsPerPage, (pageNo + 1) * questionsPerPage);
-    }, [questions])
+        return questions.slice((pageNo - 1) * questionsPerPage, pageNo * questionsPerPage);
+    }, [questions, questionsPerPage, pageNo])
 
     const handleAnswerSubmit = (id, userAnswer, correctAnswer) => {
         if (!userAnswer) {
@@ -70,10 +69,8 @@ const Questions = ({
         const isCorrect = JSON.stringify(userAnswer) === JSON.stringify(correctAnswer);
         if (!isCorrect) {
             message.error('答题错误，正确答案是' + correctAnswer)
-            setWrongQuestions(prev => mergeAndRemoveDuplicates(prev, [id]));
         } else {
             message.success('恭喜你回答正确')
-            setWrongQuestions(prev => prev.filter(item => item !== id));
         }
         questions.forEach(item => {
             if (item.id === id) {
@@ -83,14 +80,11 @@ const Questions = ({
             }
         })
     };
-    const wrongQuestionAll = useMemo(() => {
-        return wrongQuestions.map(item => {
-            return questions.find(q => q.id === item)
-        })
-    }, [wrongQuestions])
+    const wrongQuestions = questions.filter(item => {
+        return item.hasSubmit && !item.isCorrect
+    })
     const reset = () => {
         setPageNo(0);
-        setWrongQuestions([]);
         setUserAnswers({});
         questions.forEach(item => {
             item.hasSubmit = false;
@@ -109,8 +103,8 @@ const Questions = ({
     return (
         <div className="question-box">
             {currentQuestions.map((q, index) => {
-                q.pageNo = pageNo * 10 + index + 1;
-                return <div className="question">
+                q.pageNo = (pageNo - 1) * 10 + index + 1;
+                return <div className={`question ${q.hasSubmit && q.isCorrect ? 'right' : ''} ${q.hasSubmit && !q.isCorrect ? 'wrong' : ''}`}>
                     <Question key={q.id} q={q} handleAnswerSubmit={handleAnswerSubmit}></Question>
                     {q.hasSubmit && !q.isCorrect ? <div>
                         {/*{q.userAnswer && <div>你的答案：{q.userAnswer}</div>}*/}
@@ -119,7 +113,9 @@ const Questions = ({
                 </div>
             })}
             <div className="page">
-                <Pagination align="center" current={pageNo} total={questions.length - 1} onChange={handlePageChange}/>
+                <Pagination align="center" pageSize={questionsPerPage} onShowSizeChange={(c, size) => {
+                    setQuestionsPerPage(size)
+                }} current={pageNo} total={questions.length - 1} onChange={handlePageChange}/>
                 {pageNo === totalPages - 1 && <button onClick={reset}>重做</button>}
             </div>
             <Score questions={questions} userAnswers={userAnswers} wrongQuestions={wrongQuestions}
@@ -131,32 +127,40 @@ const Questions = ({
                 onCancel={() => setShowErrorModal(false)}
             >
                 {
-                    wrongQuestionAll.map(q => {
+                    wrongQuestions.map(q => {
+                        let questionDom = null;
                         switch (q.type) {
                             case 'single_choice':
-                                return (
+                                questionDom = (
                                     <SingleChoiceQuestion
                                         key={q.id}
                                         question={q}
                                     />
                                 );
+                                break
                             case 'multiple_choice':
-                                return (
+                                questionDom =  (
                                     <MultipleChoiceQuestion
                                         key={q.id}
                                         question={q}
                                     />
                                 );
+                                break
                             case 'true_false':
-                                return (
+                                questionDom = (
                                     <TrueFalseQuestion
                                         key={q.id}
                                         question={q}
                                     />
                                 );
+                                break
                             default:
-                                return null;
+
                         }
+                        return <div>
+                            {questionDom}
+                            <div>你的答案：{q.userAnswer} 正确答案：{q.answer}</div>
+                        </div>
                     })
                 }
             </Modal>
