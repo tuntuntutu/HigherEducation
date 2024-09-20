@@ -19,7 +19,7 @@ const Score = ({questions, userAnswers, wrongQuestions, setShowErrorModal}) => {
                 {wrongQuestionList.length === 0 ? (
                     <a style={{color: 'grey'}}>暂无错题</a>
                 ) : (
-                    <a onClick={showErrorModal}>查看错题</a>
+                    <>{wrongQuestionList.length} / {questions.length}<a onClick={showErrorModal}>查看</a></>
                 )}
             </h4>
         </div>

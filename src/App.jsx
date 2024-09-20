@@ -6,7 +6,7 @@ import './App.css';
 const App = () => {
     const [questions, setQuestions] = React.useState([]);
     const goToSessionQuestion = (list) => () => {
-        setQuestions(list.single_choice.concat(list.multiple_choice, list.true_false));
+        setQuestions(list.single_choice.concat(list.multiple_choice, list.true_false).filter(item=> item.type ==='true_false'));
     }
     const selectSession = () => {
         setQuestions([]);

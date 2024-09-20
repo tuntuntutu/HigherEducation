@@ -4,6 +4,9 @@
   padding: 2rem;
 }
 
+.question-box{
+  margin-bottom: 40px;
+}
 .session{
   border: 1px solid #eaeaea;
   width: 200px;
@@ -32,18 +35,20 @@
 }
 
 .page{
+  position: fixed;
+  bottom: 0;
+  left: 0;
   display: flex;
+  padding: 5px 0;
+  background: #ffffff;
   align-content: center;
   justify-content: center;
-  background: #eaeaea;
-  border: 1px solid #eaeaea;
+  border-top: 1px solid #eaeaea;
   box-shadow: #1a1a1a 0 0 10px;
   align-items: center;
   width: 100%;
   max-width: 600px;
   color: #1a1a1a;
-  border-radius: 10px;
-
 }
 .page   button{
   margin: 2px 5px;

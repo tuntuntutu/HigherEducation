@@ -1,4 +1,5 @@
 import React, {useState} from 'react';
+import {Space, Radio} from 'antd'
 
 const SingleChoiceQuestion = ({question, onSubmit}) => {
     const [selectedOption, setSelectedOption] = useState('');
@@ -10,24 +11,17 @@ const SingleChoiceQuestion = ({question, onSubmit}) => {
     return (
         <div>
             <h3>【{question.pageNo}】{question.question}</h3>
-            {question.options.map((option, index) => (
-                <div key={index}>
-                    {
-                        onSubmit ? <>
-                            <input
-                                id={question.id + option}
-                                type="radio"
-                                value={option}
-                                checked={selectedOption === option}
-                                onChange={() => setSelectedOption(option)}
-                            />
-                            <label htmlFor={question.id + option}>
-                                {option}
-                            </label>
-                        </>: option
-                    }
-                </div>
-            ))}
+            <Radio.Group
+                disabled={!onSubmit}
+                onChange={(e) => {
+                    setSelectedOption(e.target.value)
+                }} value={selectedOption}>
+                <Space direction="vertical">
+                    {question.options.map((option, index) => (
+                        <Radio value={option}>{option}</Radio>
+                    ))}
+                </Space>
+            </Radio.Group>
             {
                 onSubmit ? <button className="submit" onClick={handleSubmit}>提交</button> : null
             }

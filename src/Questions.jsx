@@ -1,11 +1,10 @@
 import React, {useEffect, useMemo, useState} from 'react';
-import Modal from 'react-modal'
+import {message, Modal, Pagination} from 'antd'
 import SingleChoiceQuestion from './SingleChoiceQuestion.jsx';
 import MultipleChoiceQuestion from './MultipleChoiceQuestion';
 import TrueFalseQuestion from './TrueFalseQuestion';
 import Score from './Score';
 
-Modal.defaultStyles.overlay.backgroundColor = 'cornsilk';
 
 function mergeAndRemoveDuplicates(...arrays) {
     // 使用 Set 去重，并将结果转换回数组
@@ -50,31 +49,55 @@ const Questions = ({
     const [pageNo, setPageNo] = useState(0);
     const questionsPerPage = 10;
     const totalPages = Math.ceil(questions.length / questionsPerPage);
-    const currentQuestions = questions.slice(pageNo * questionsPerPage, (pageNo + 1) * questionsPerPage);
     const [showErrorModal, setShowErrorModal] = React.useState(false);
 
     const handlePageChange = (newPageNo) => {
         setPageNo(newPageNo);
     }
 
+    const currentQuestions = useMemo(() => {
+        return questions.slice(pageNo * questionsPerPage, (pageNo + 1) * questionsPerPage);
+    }, [questions])
 
     const handleAnswerSubmit = (id, userAnswer, correctAnswer) => {
-        console.log(userAnswer, correctAnswer)
+        if (!userAnswer) {
+            message.error('请先选择答案')
+            return
+        }
         setUserAnswers({...userAnswers, [id]: userAnswer});
 
         // 判断答案是否正确
         const isCorrect = JSON.stringify(userAnswer) === JSON.stringify(correctAnswer);
         if (!isCorrect) {
+            message.error('答题错误，正确答案是' + correctAnswer)
             setWrongQuestions(prev => mergeAndRemoveDuplicates(prev, [id]));
         } else {
+            message.success('恭喜你回答正确')
             setWrongQuestions(prev => prev.filter(item => item !== id));
         }
+        questions.forEach(item => {
+            if (item.id === id) {
+                item.userAnswer = userAnswer;
+                item.hasSubmit = true;
+                item.isCorrect = isCorrect;
+            }
+        })
     };
     const wrongQuestionAll = useMemo(() => {
         return wrongQuestions.map(item => {
             return questions.find(q => q.id === item)
         })
     }, [wrongQuestions])
+    const reset = () => {
+        setPageNo(0);
+        setWrongQuestions([]);
+        setUserAnswers({});
+        questions.forEach(item => {
+            item.hasSubmit = false;
+            item.userAnswer = null;
+            item.isCorrect = null;
+        })
+    }
 
     useEffect(() => {
         const localWrongQuestions = localStorage.getItem('wrongQuestions') || '';
@@ -84,33 +107,28 @@ const Questions = ({
 
 
     return (
-        <div>
+        <div className="question-box">
             {currentQuestions.map((q, index) => {
                 q.pageNo = pageNo * 10 + index + 1;
-                return <div className="question"><Question key={q.id} q={q} handleAnswerSubmit={handleAnswerSubmit}></Question></div>
+                return <div className="question">
+                    <Question key={q.id} q={q} handleAnswerSubmit={handleAnswerSubmit}></Question>
+                    {q.hasSubmit && !q.isCorrect ? <div>
+                        {/*{q.userAnswer && <div>你的答案：{q.userAnswer}</div>}*/}
+                        {q.answer && <div>正确答案：{q.answer}</div>}
+                    </div> : null}
+                </div>
             })}
             <div className="page">
-                {pageNo > 0 && <button onClick={() => handlePageChange(pageNo - 1)}>上一页</button>}
-                {pageNo < totalPages - 1 && <button onClick={() => handlePageChange(pageNo + 1)}>下一页</button>}
-                {pageNo === totalPages - 1 && <button onClick={() => handlePageChange(0)}>重做</button>}
+                <Pagination align="center" current={pageNo} total={questions.length - 1} onChange={handlePageChange}/>
+                {pageNo === totalPages - 1 && <button onClick={reset}>重做</button>}
             </div>
             <Score questions={questions} userAnswers={userAnswers} wrongQuestions={wrongQuestions}
                    setShowErrorModal={setShowErrorModal}/>
             <Modal
-                isOpen={showErrorModal}
-                style={{
-                    top: '50%',
-                    left: '50%',
-                    right: 'auto',
-                    bottom: 'auto',
-                    marginRight: '-50%',
-                    transform: 'translate(-50%, -50%)',
-                    height: '80%',
-                    width: '80%',
-                    overflow: 'auto'
-                }}
-                contentLabel="Example Modal"
-                onRequestClose={() => setShowErrorModal(false)}
+                open={showErrorModal}
+                title="错题集"
+                footer={null}
+                onCancel={() => setShowErrorModal(false)}
             >
                 {
                     wrongQuestionAll.map(q => {
